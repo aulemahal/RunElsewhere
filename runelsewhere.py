@@ -2,21 +2,30 @@ from IPython.core.magic import Magics
 from IPython.core.magic import magics_class
 from IPython.core.magic import line_magic
 import IPython.utils.path as ipypath
-from pathlib import Path
+from pathlib import Path, PureWindowsPath, PurePosixPath
 
 
 @magics_class
 class RunElsewhere(Magics):
     def __init__(self, shell, client_side, server_side):
         super().__init__(shell)
-        self.deffile = '/home/phobos/Python/rien.py'
-        self.client_path = Path(client_side)
+        self.Client_Path = Path
+        self.client_path = PurePosixPath(client_side)
+        if not self.client_path.is_absolute():
+            self.client_path = PureWindowsPath(client_side)
+            if not self.client_path.is_absolute():
+                raise ValueError('Provided client path must be absolute.')
+            self.Client_Path = PureWindowsPath
+
         self.server_path = Path(server_side)
+        if not self.server_path.is_absolute():
+            raise ValueError('Provided server path must be absolute.')
+
         self.base_run = shell.find_line_magic('run')
         self.active = True
 
     def get_py_filename(self, name, force_win32=None):
-        path = Path(name)
+        path = self.Client_Path(name)
         if self.active and path.is_absolute():
             try:
                 path = path.relative_to(self.client_path)
